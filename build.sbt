@@ -1,14 +1,26 @@
-name := "basic"
+name := "claimintel"
 
 organization := "com.mycompany"
 
 version := "0.1"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.2"
+
+sbtVersion := "0.13.1"
+
+seq(webSettings : _*)
 
 libraryDependencies ++= Seq(
-  "org.scalatest" % "scalatest_2.10" % "2.0" % "test" withSources() withJavadoc(),
-  "org.scalacheck" %% "scalacheck" % "1.10.0" % "test" withSources() withJavadoc()
+  "org.apache.solr" % "solr-core" % "4.9.0",
+  "org.springframework" % "spring-webmvc" % "4.0.0.RELEASE",
+  "org.eclipse.jetty" % "jetty-webapp" % "9.1.0.v20131115" % "container, compile",
+  "org.eclipse.jetty" % "jetty-jsp" % "9.1.0.v20131115" % "container",
+  "org.apache.commons" % "commons-lang3" % "3.0",
+  "net.sourceforge.collections" % "collections-generic" % "4.01",
+  "commons-beanutils" % "commons-beanutils" % "1.8.3",
+  "commons-io" % "commons-io" % "2.4",
+  "log4j" % "log4j" % "1.2.14",
+  "com.novocode" % "junit-interface" % "0.8" % "test"
 )
 
 initialCommands := "import com.mycompany.basic._"
