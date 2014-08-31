@@ -1,9 +1,15 @@
-giter8Settings
+name := "basic"
 
-resolvers += Resolver.url("typesafe", url("http://repo.typesafe.com/typesafe/ivy-releases/"))(Resolver.ivyStylePatterns)
+organization := "com.mycompany"
 
-G8Keys.g8TestBufferLog := false
+version := "0.1"
 
-scriptedLaunchOpts ++= sys.process.javaVmArguments.filter(
-  a => Seq("-Xmx", "-Xms", "-XX", "-Dsbt.log.noformat").exists(a.startsWith)
+scalaVersion := "2.10.3"
+
+libraryDependencies ++= Seq(
+  "org.scalatest" % "scalatest_2.10" % "2.0" % "test" withSources() withJavadoc(),
+  "org.scalacheck" %% "scalacheck" % "1.10.0" % "test" withSources() withJavadoc()
 )
+
+initialCommands := "import com.mycompany.basic._"
+
