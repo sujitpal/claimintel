@@ -8,11 +8,14 @@ scalaVersion := "2.10.2"
 
 sbtVersion := "0.13.1"
 
-seq(webSettings : _*)
+//seq(webSettings : _*)
+
+jetty()
 
 libraryDependencies ++= Seq(
   "org.apache.solr" % "solr-core" % "4.9.0",
   "org.springframework" % "spring-webmvc" % "4.0.0.RELEASE",
+  "jfree" % "jfreechart" % "1.0.13",
   "org.eclipse.jetty" % "jetty-webapp" % "9.1.0.v20131115" % "container, compile",
   "org.eclipse.jetty" % "jetty-jsp" % "9.1.0.v20131115" % "container",
   "org.apache.commons" % "commons-lang3" % "3.0",
