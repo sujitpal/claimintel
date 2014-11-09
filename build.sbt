@@ -8,8 +8,6 @@ scalaVersion := "2.10.2"
 
 sbtVersion := "0.13.1"
 
-//seq(webSettings : _*)
-
 jetty()
 
 libraryDependencies ++= Seq(
@@ -25,6 +23,3 @@ libraryDependencies ++= Seq(
   "log4j" % "log4j" % "1.2.14",
   "com.novocode" % "junit-interface" % "0.8" % "test"
 )
-
-initialCommands := "import com.mycompany.basic._"
-
