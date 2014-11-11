@@ -3,12 +3,14 @@ package com.mycompany.claimintel
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.regex.Pattern
+
 import scala.collection.JavaConversions._
+
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.SolrQuery.ORDER
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.springframework.stereotype.Service
-import java.util.regex.Pattern
 
 @Service
 class SolrService {
@@ -22,9 +24,8 @@ class SolrService {
     val query = new SolrQuery()
     query.setQuery("*:*")
     query.setFilterQueries("rec_type:B")
-    filters.filter(nv => (! "bene_age".equals(nv._1)))
-      .foreach(nv => query.addFilterQuery(List(nv._1, nv._2)
-                          .mkString(":")))
+    groupFilters(filters).foreach(nv => 
+      query.addFilterQuery(List(nv._1, nv._2).mkString(":")))
     query.setFacet(true)
     query.addFacetField("bene_sex", "bene_race", "sp_state", "bene_comorbs")
     query.setRows(0)
@@ -66,9 +67,8 @@ class SolrService {
     val query = new SolrQuery()
     query.setQuery("*:*")
     query.setFilterQueries("rec_type:B")
-    filters.filter(nv => ("bene_age".equals(nv._1)))
-      .map(nv => intervalToQuery(nv._2))
-      .foreach(fq => query.addFilterQuery(fq))
+    groupFilters(filters).foreach(fq => 
+      query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
     query.setRows(0)
     query.setFacet(true)
     fqs.foreach(fq => query.addFacetQuery(fq))
@@ -78,6 +78,14 @@ class SolrService {
       .toMap
   }
 
+  def groupFilters(filters: List[(String,String)]): 
+      List[(String,String)] = {
+    filters.groupBy(_._1)
+      .map(group => (group._1, 
+        "(" + group._2.map(_._2).mkString(" OR ") + ")"))
+      .toList
+  }
+  
   def yearsBetween(d1: Date, d2: Date): Int = {
     val cal1 = Calendar.getInstance(Locale.getDefault())
     cal1.setTime(d1)

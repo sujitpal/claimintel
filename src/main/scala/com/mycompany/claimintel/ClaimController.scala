@@ -67,8 +67,9 @@ class ClaimController @Autowired() (
       cstats.setName(entry._1)
       cstats.setCount(entry._2)
       cstats.setPcount(1.0D * entry._2 / ageTotal)
+      val query = solrService.intervalToQuery(entry._1).split(":")
       cstats.setSelected(solrService.isSelected(
-        popFilters, "bene_age", entry._1))
+        popFilters, query(0), query(1)))
       cstats
     })
     .toList
@@ -90,7 +91,12 @@ class ClaimController @Autowired() (
       req.getParameterNames()
         .filter(pname => (pname.startsWith("bene_") || 
             pname.startsWith("sp_")))
-        .map(pname => pmap(pname).map(pval => (pname, pval)))
+        .map(pname => if (pname.equals("bene_age"))
+          pmap(pname).map(pval => {
+            val query = solrService.intervalToQuery(pval).split(":")
+            (query(0), query(1))
+          })
+          else pmap(pname).map(pval => (pname, pval)))
         .flatten
         .toList
     }
