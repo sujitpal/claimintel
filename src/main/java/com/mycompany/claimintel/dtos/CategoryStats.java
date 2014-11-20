@@ -1,6 +1,6 @@
 package com.mycompany.claimintel.dtos;
 
-public class CategoryStats {
+public class CategoryStats implements IDataStats {
 
   private String name;
   private long count;

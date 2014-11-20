@@ -11,7 +11,6 @@
     <hr/>
 
     <form method="GET" action="/population.html">
-      <input type="hidden" name="filter" value="true"/>
 
       <p>
       <h3>Distribution by Gender</h3>
@@ -53,7 +52,7 @@
       <table cellspacing="3" cellpadding="0" border="0" width="100%">
         <tr>
           <td width="50%" valign="top">
-            <img src="/chart.html?type=bar&data=${bene_age.encodedData}"/>
+            <img src="/chart.html?type=bar&data=${bene_age.encodedData}&csort=range"/>
           </td>
           <td width="50%" valign="top">
             <table cellspacing="1" cellpadding="0" border="1">
@@ -189,8 +188,11 @@
       </table>
       </p>
 
-      <input type="submit" value="Filter Results"/>&nbsp;||&nbsp;
-      <a href="/population.html">Clear Filters</a>
+      <input type="submit" value="Filter by Demographic"/>&nbsp;||&nbsp;
+      <a href="/population.html">Clear Demographic Filters</a>&nbsp;||&nbsp;
+      <a href="/codes.html?${filters}">Codes</a>&nbsp;||&nbsp;
+      <a href="/costs.html?${filters}">Costs</a>&nbsp;||&nbsp;
+      <a href="/timelines.html?${filters}">Timelines</a>
 
     </form>
 

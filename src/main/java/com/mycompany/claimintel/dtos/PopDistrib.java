@@ -5,7 +5,7 @@ import java.util.List;
 public class PopDistrib {
   
   private String encodedData;
-  private List<CategoryStats> stats;
+  private List<IDataStats> stats;
   private long total;
   
   public String getEncodedData() {
@@ -16,11 +16,11 @@ public class PopDistrib {
     this.encodedData = encodedData;
   }
   
-  public List<CategoryStats> getStats() {
+  public List<IDataStats> getStats() {
     return stats;
   }
   
-  public void setStats(List<CategoryStats> stats) {
+  public void setStats(List<IDataStats> stats) {
     this.stats = stats;
   }
 

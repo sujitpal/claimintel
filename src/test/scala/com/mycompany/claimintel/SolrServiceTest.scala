@@ -32,20 +32,33 @@ class SolrServiceTest {
 //    Assert.assertEquals(9, (lb to ub by 10).toList.size)
 //  }
   
-  @Test
-  def testQueryIntervalParsingFormatting(): Unit = {
-    val s = "bene_birth_date:[NOW-110YEAR TO NOW-100YEAR]"
-    val interval = solrService.queryToInterval(s)
-    Assert.assertEquals("100-110", interval)
-    Console.println("interval=" + interval)
-    val news = solrService.intervalToQuery(interval)
-    Console.println("new_s=" + news)
-    Assert.assertEquals(s, news)
-  }
+//  @Test
+//  def testQueryIntervalParsingFormatting(): Unit = {
+//    val s = "bene_birth_date:[NOW-110YEAR TO NOW-100YEAR]"
+//    val interval = solrService.queryToInterval(s)
+//    Assert.assertEquals("100-110", interval)
+//    Console.println("interval=" + interval)
+//    val news = solrService.intervalToQuery(interval)
+//    Console.println("new_s=" + news)
+//    Assert.assertEquals(s, news)
+//  }
 
 //  @Test
 //  def testPopulationAgeFacet(): Unit = {
 //    val ageFacets = solrService.populationAgeFacet(List.empty)
 //    Console.println(ageFacets)
 //  }
+
+//  @Test
+//  def testCostAgeFacet(): Unit = {
+//    val lb = solrService.findCostBoundary(true)
+//    val ub = solrService.findCostBoundary(false)
+//    Console.println("lb=" + lb + ", ub=" + ub)
+//    solrService.costFacets(List.empty, "B")
+//  }
+
+  @Test
+  def testCostStatistics(): Unit = {
+    solrService.costStatistics(List.empty, "B")
+  }
 }

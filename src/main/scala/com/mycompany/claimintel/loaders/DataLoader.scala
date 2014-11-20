@@ -41,11 +41,11 @@ class DataLoader(datadir: String, solrUrl: String) {
   val solr = new HttpSolrServer(solrUrl)
   val subdirs = Array(
 //      "benefit_summary", 
-//      "inpatient_claims", 
+      "inpatient_claims", 
       "outpatient_claims")
   
   def load(): Unit = {
-    solr.deleteByQuery("rec_type:O")
+//    solr.deleteByQuery("rec_type:O")
     solr.commit()
     subdirs.foreach(subdir => {
       new File(datadir, subdir).listFiles().foreach(file => {
@@ -114,7 +114,8 @@ class DataLoader(datadir: String, solrUrl: String) {
   
   def parseInpatientClaim(cols: Array[String]): SolrInputDocument = {
     val doc = new SolrInputDocument()
-    doc.addField("id", DigestUtils.md2Hex("I:" + cols(0)))
+    doc.addField("id", DigestUtils.md2Hex(
+      List("I", cols(0), cols(1), cols(2)).mkString(":")))
     doc.addField("rec_type", "I")
     val bsfs = getBenefitSummary(cols(0))
     bsfs.entrySet().foreach(entry => 
@@ -169,7 +170,8 @@ class DataLoader(datadir: String, solrUrl: String) {
   
   def parseOutpatientClaim(cols: Array[String]): SolrInputDocument = {
         val doc = new SolrInputDocument()
-    doc.addField("id", DigestUtils.md2Hex("O:" + cols(0)))
+    doc.addField("id", DigestUtils.md2Hex(
+      List("O", cols(0), cols(1), cols(2)).mkString(":")))
     doc.addField("rec_type", "O")
     val bsfs = getBenefitSummary(cols(0))
     bsfs.entrySet().foreach(entry => 

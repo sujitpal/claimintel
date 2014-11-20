@@ -10,8 +10,10 @@ sbtVersion := "0.13.1"
 
 jetty()
 
+resolvers += Resolver.mavenLocal
+
 libraryDependencies ++= Seq(
-  "org.apache.solr" % "solr-core" % "4.9.0",
+  "org.apache.solr" % "solr-core" % "4.9.1",
   "org.springframework" % "spring-webmvc" % "4.0.0.RELEASE",
   "jfree" % "jfreechart" % "1.0.13",
   "org.eclipse.jetty" % "jetty-webapp" % "9.1.0.v20131115" % "container, compile",

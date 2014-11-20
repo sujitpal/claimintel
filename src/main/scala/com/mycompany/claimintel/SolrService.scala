@@ -4,21 +4,19 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
-
 import scala.collection.JavaConversions._
-
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.SolrQuery.ORDER
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.springframework.stereotype.Service
+import org.apache.solr.common.util.NamedList
+import com.mycompany.claimintel.dtos.PatientGroup
 
 @Service
 class SolrService {
   
   val server = new HttpSolrServer("http://localhost:8983/solr/collection1")
   
-  def name = "SolrService"
-    
   def populationFacets(filters: List[(String,String)]): 
       Map[String,Map[String,Long]] = {
     val query = new SolrQuery()
@@ -78,14 +76,6 @@ class SolrService {
       .toMap
   }
 
-  def groupFilters(filters: List[(String,String)]): 
-      List[(String,String)] = {
-    filters.groupBy(_._1)
-      .map(group => (group._1, 
-        "(" + group._2.map(_._2).mkString(" OR ") + ")"))
-      .toList
-  }
-  
   def yearsBetween(d1: Date, d2: Date): Int = {
     val cal1 = Calendar.getInstance(Locale.getDefault())
     cal1.setTime(d1)
@@ -112,6 +102,123 @@ class SolrService {
   def intervalToQuery(interval: String): String = {
     val bounds = interval.split("-").map(_.toInt)
     IntervalQueryTemplate.format(bounds(1), bounds(0))
+  }
+  
+  def codeFacets(filters: List[(String,String)], ttype: String): 
+      Map[String,Map[String,Long]] = {
+    val codeFields = List("icd9_dgns_cds", "icd9_prcdr_cds", "hcpcs_cds")
+    val query = new SolrQuery()
+    query.setQuery("*:*")
+    query.setFilterQueries(if ("B".equals(ttype)) "rec_type:(I OR O)" 
+                           else "rec_type:" + ttype)
+    groupFilters(filters).foreach(fq => 
+      query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+    query.setRows(0)
+    query.setFacet(true)
+    codeFields.foreach(codeField => query.addFacetField(codeField))
+    val resp = server.query(query)
+    resp.getFacetFields().map(ff => 
+      (ff.getName(), ff.getValues().map(fval => 
+        (reformat(fval.getName(), ff.getName()), 
+        fval.getCount())).toMap))
+      .toMap
+  }
+  
+  def reformat(code: String, codeType: String): String = {
+    if (codeType.startsWith("icd9_")) {
+      if (code.length() > 3) {
+        val (a, b) = code.splitAt(3)
+        List(a, b).mkString(".")
+      } else code
+    } else code
+  }
+  
+  def costFacets(filters: List[(String,String)], 
+      ttype: String): Map[String,Long] = {
+    val query = new SolrQuery()
+    query.setQuery("*:*")
+    query.setFilterQueries(if ("B".equals(ttype)) "rec_type:(I OR O)" 
+                           else "rec_type:" + ttype)
+    groupFilters(filters).foreach(fq => 
+      query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+    query.setRows(0)
+    query.setFacet(true)
+    val minCost = findCostBoundary(true)
+    val maxCost = findCostBoundary(false)
+    val binSize = (maxCost - minCost) / 50
+    (minCost to maxCost by binSize)
+      .sliding(2).toList
+      .map(v => costToQuery(v(0), v(1)))
+      .foreach(fq => query.addFacetQuery(fq))
+    val resp = server.query(query)
+    resp.getFacetQuery().entrySet()
+      .map(e => (queryToCost(e.getKey()).toString, 
+        e.getValue().toLong))
+      .toMap
+  }
+  
+  def findCostBoundary(lowest: Boolean): Float = {
+    val query = new SolrQuery();
+    query.setQuery("*:*")
+    query.setFilterQueries(
+      "rec_type:(I OR O)", 
+      "clm_pmt_amt:[0 TO *]")
+    query.setSort("clm_pmt_amt", if (lowest) ORDER.asc 
+                                 else ORDER.desc)
+    query.setFields("clm_pmt_amt")
+    query.setRows(1)
+    val resp = server.query(query)
+    val result = resp.getResults().head
+    result.getFieldValue("clm_pmt_amt").asInstanceOf[Float]
+  }
+  
+  val CostQueryPattern = Pattern.compile(
+    """clm_pmt_amt:\[(\d+) TO (\d+)]""")
+
+  def queryToCost(q: String): Int = {
+    val m = CostQueryPattern.matcher(q)
+    if (m.matches()) ((m.group(1).toInt + m.group(2).toInt) / 2).toInt
+    else 0
+  }
+  
+  def costToQuery(lb: Float, ub: Float): String =
+    "clm_pmt_amt:[%d TO %d]".format(lb.toInt, ub.toInt)
+    
+  def costToQuery(cost: Float): String = 
+    costToQuery(cost - 25, cost + 25) 
+  
+  def costStatistics(filters: List[(String,String)], 
+      ttype: String): Map[String,Object] = {
+    val query = new SolrQuery()
+    query.setQuery("*:*")
+    query.setFilterQueries(if ("B".equals(ttype)) "rec_type:(I OR O)" 
+                           else "rec_type:" + ttype)
+    query.addFilterQuery("clm_pmt_amt:[0 TO *]") // ensure +ve
+    groupFilters(filters).foreach(fq => 
+      query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+    query.setRows(0)
+    query.add("stats", "true")
+    query.add("stats.field", "clm_pmt_amt")
+    val resp = server.query(query)
+    resp.getResponse()
+      .get("stats").asInstanceOf[NamedList[Object]]
+      .get("stats_fields").asInstanceOf[NamedList[Object]]
+      .get("clm_pmt_amt").asInstanceOf[NamedList[Object]]
+      .map(e => (e.getKey(), e.getValue()))
+      .toMap
+  }
+  
+  def patientGroups(filters: List[(String,String)]): 
+      List[PatientGroup] = {
+    ???
+  }
+  
+  def groupFilters(filters: List[(String,String)]): 
+      List[(String,String)] = {
+    filters.groupBy(_._1)
+      .map(group => (group._1, 
+        "(" + group._2.map(_._2).mkString(" OR ") + ")"))
+      .toList
   }
 
   def isSelected(facetFilters: List[(String,String)], 
