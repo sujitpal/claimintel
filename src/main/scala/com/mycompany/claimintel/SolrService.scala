@@ -56,7 +56,7 @@ class SolrService {
     val oldestDob = findDateOfBirth(false)
     val now = new Date()
     val lb = round(yearsBetween(oldestDob, now), 10, false)
-    val ub = round(yearsBetween(youngestDob, now), 10, true)
+    val ub = round(yearsBetween(youngestDob, now), 10, true) + 10
     val fqs = (lb to ub by 10)
       .sliding(2)
       .toList
@@ -89,9 +89,9 @@ class SolrService {
     else (Math.floor(1.0D * v / nearest) * nearest).toInt
     
   val IntervalQueryTemplate = 
-    "bene_birth_date:[NOW-%dYEAR TO NOW-%dYEAR]"
+    "bene_birth_date:[NOW-%dYEAR TO NOW-%dYEAR}"
   val IntervalQueryPattern = Pattern.compile(
-    """bene_birth_date:\[NOW-(\d+)YEAR TO NOW-(\d+)YEAR\]""")
+    """bene_birth_date:\[NOW-(\d+)YEAR TO NOW-(\d+)YEAR\}""")
     
   def queryToInterval(q: String): String = {
     val m = IntervalQueryPattern.matcher(q)
@@ -133,6 +133,76 @@ class SolrService {
     } else code
   }
   
+  def mortalityFacets(filters: List[(String,String)]): 
+      Map[String,Long] = {
+    val query = new SolrQuery()
+    query.setQuery("*:*")
+    query.setFilterQueries("rec_type:B", "age_at_death:[1 TO *]")
+    groupFilters(filters).foreach(fq => 
+      query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+    query.setRows(0)
+    query.setFacet(true)
+    val minAge = findMortalityAgeBoundary(true)
+    val maxAge = findMortalityAgeBoundary(false) + 10
+    val binSize = (maxAge - minAge) / 10
+    (minAge to maxAge by binSize)
+      .sliding(2)
+      .toList
+      .map(v => mortalityToQuery(v(0), v(1)))
+      .foreach(fq => query.addFacetQuery(fq))
+    val resp = server.query(query)
+    resp.getFacetQuery().entrySet()
+      .map(e => (queryToMortality(e.getKey()).toString, 
+        e.getValue().toLong))
+      .toMap
+  }
+
+  val MortalityQueryPattern = Pattern.compile(
+    """age_at_death:\[(\d+) TO (\d+)}""")
+
+  def queryToMortality(q: String): String = {
+    val m = MortalityQueryPattern.matcher(q)
+    val bounds = if (m.matches()) ((m.group(1).toInt, m.group(2).toInt))
+                 else (0, 0)
+    List(bounds._1, bounds._2).mkString("-")
+  }
+  
+  def mortalityToQuery(lb: Int, ub: Int): String =
+    "age_at_death:[%d TO %d}".format(lb, ub)
+
+  def findMortalityAgeBoundary(lowest: Boolean): Int = {
+    val query = new SolrQuery()
+    query.setQuery("*:*")
+    query.setFilterQueries("rec_type:B", "age_at_death:[1 TO *]")
+    query.setRows(1)
+    query.setFields("age_at_death")
+    query.setSort("age_at_death", if (lowest) ORDER.asc 
+                                  else ORDER.desc)
+    val resp = server.query(query)
+    resp.getResults().head
+      .getFieldValue("age_at_death")
+      .asInstanceOf[Int]
+  }
+  
+  def mortalityStatistics(filters: List[(String,String)]):
+      Map[String,Object] = {
+    val query = new SolrQuery()
+    query.setQuery("*:*")
+    query.setFilterQueries("rec_type:B", "age_at_death:[1 TO *]")
+    groupFilters(filters).foreach(fq => 
+      query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+    query.setRows(0)
+    query.add("stats", "true")
+    query.add("stats.field", "age_at_death")
+    val resp = server.query(query)
+    resp.getResponse()
+      .get("stats").asInstanceOf[NamedList[Object]]
+      .get("stats_fields").asInstanceOf[NamedList[Object]]
+      .get("age_at_death").asInstanceOf[NamedList[Object]]
+      .map(e => (e.getKey(), e.getValue()))
+      .toMap
+  }
+  
   def costFacets(filters: List[(String,String)], 
       ttype: String): Map[String,Long] = {
     val query = new SolrQuery()
@@ -144,7 +214,7 @@ class SolrService {
     query.setRows(0)
     query.setFacet(true)
     val minCost = findCostBoundary(true)
-    val maxCost = findCostBoundary(false)
+    val maxCost = findCostBoundary(false) + 50.0F
     val binSize = (maxCost - minCost) / 50
     (minCost to maxCost by binSize)
       .sliding(2).toList
@@ -173,7 +243,7 @@ class SolrService {
   }
   
   val CostQueryPattern = Pattern.compile(
-    """clm_pmt_amt:\[(\d+) TO (\d+)]""")
+    """clm_pmt_amt:\[(\d+) TO (\d+)}""")
 
   def queryToCost(q: String): Int = {
     val m = CostQueryPattern.matcher(q)
@@ -182,7 +252,7 @@ class SolrService {
   }
   
   def costToQuery(lb: Float, ub: Float): String =
-    "clm_pmt_amt:[%d TO %d]".format(lb.toInt, ub.toInt)
+    "clm_pmt_amt:[%d TO %d}".format(lb.toInt, ub.toInt)
     
   def costToQuery(cost: Float): String = 
     costToQuery(cost - 25, cost + 25) 

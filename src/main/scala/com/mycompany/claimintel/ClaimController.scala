@@ -119,10 +119,7 @@ class ClaimController @Autowired() (
     val popFilters = buildPopulationFilter(req)
     model.addAttribute("filters", 
       seqAsJavaList(popFilters.map(pf => new PopFilter(pf._1, pf._2))))
-    model.addAttribute("filterStr", 
-      popFilters.map(f => 
-        f._1 + "=" + URLEncoder.encode(f._2, "UTF-8"))
-        .mkString("&"))
+    model.addAttribute("filterStr", buildFilterString(popFilters))
     val ttype = ServletRequestUtils.getStringParameter(req, "ttype", "B")
     model.addAttribute("ttype", ttype)
     val codeFacets = solrService.codeFacets(popFilters, ttype)
@@ -156,10 +153,7 @@ class ClaimController @Autowired() (
     val popFilters = buildPopulationFilter(req)
     model.addAttribute("filters", 
       seqAsJavaList(popFilters.map(pf => new PopFilter(pf._1, pf._2))))
-    model.addAttribute("filterStr", 
-      popFilters.map(f => 
-        f._1 + "=" + URLEncoder.encode(f._2, "UTF-8"))
-        .mkString("&"))
+    model.addAttribute("filterStr", buildFilterString(popFilters))
     val ttype = ServletRequestUtils.getStringParameter(req, "ttype", "B")
     model.addAttribute("ttype", ttype)
     val costdata = solrService.costFacets(popFilters, ttype)
@@ -190,6 +184,40 @@ class ClaimController @Autowired() (
     "costs"
   }
   
+  @RequestMapping(value = Array("/mortality.html"),
+      method = Array(RequestMethod.GET))
+  def mortality(req: HttpServletRequest, res: HttpServletResponse, 
+      model: Model): String = {
+
+    val popFilters = buildPopulationFilter(req)
+    model.addAttribute("filters", 
+      seqAsJavaList(popFilters.map(pf => new PopFilter(pf._1, pf._2))))
+    model.addAttribute("filterStr", buildFilterString(popFilters)) 
+    val mortalityData = solrService.mortalityFacets(popFilters)
+    val mortDistrib = new PopDistrib()
+    mortDistrib.setEncodedData(URLEncoder.encode(
+      JSONObject(mortalityData).toString(), "UTF-8"))
+    val mortTotal = mortalityData.values.foldLeft(0L)(_ + _)
+    mortDistrib.setTotal(mortTotal)
+    mortDistrib.setStats(seqAsJavaList(mortalityData.map(entry => {
+      val cstats = new CategoryStats()
+      cstats.setName(entry._1)
+      cstats.setCount(entry._2)
+      cstats.setPcount(1.0D * entry._2 / mortTotal)
+      cstats
+    })
+    .toList
+    .sortWith((a,b) => a.getName().split("-")(0).toInt < 
+      b.getName().split("-")(0).toInt)))
+    model.addAttribute("age_at_death", mortDistrib)
+    
+    val mortStats = solrService.mortalityStatistics(popFilters)
+    model.addAttribute("age_at_death_stats", 
+      new ContinuousStats(mortStats))
+
+    "mortality"
+  }
+  
   def buildPopulationFilter(req: HttpServletRequest): 
       List[(String,String)] = {
     val pmap = req.getParameterMap()
@@ -204,5 +232,12 @@ class ClaimController @Autowired() (
         else pmap(pname).map(pval => (pname, pval)))
       .flatten
       .toList
+  }
+
+  def buildFilterString(filters: List[(String,String)]): String = {
+    if (filters.size == 0) ""
+    else filters.map(f => 
+        f._1 + "=" + URLEncoder.encode(f._2, "UTF-8"))
+      .mkString("&")
   }
 }
