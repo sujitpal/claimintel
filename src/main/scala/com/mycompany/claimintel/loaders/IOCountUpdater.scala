@@ -11,6 +11,7 @@ import org.apache.solr.common.SolrInputDocument
 import java.io.PrintWriter
 import java.io.FileWriter
 import java.io.File
+import org.apache.solr.client.solrj.SolrQuery.SortClause
 
 object IOCountUpdater extends App {
 
@@ -74,7 +75,9 @@ class IOCountUpdater(val solrUrl: String) {
     query.setFields("desynpuf_id")
     query.setStart(0)
     query.setRows(rows)
-    query.setSort("id", ORDER.asc)
+    query.setSorts(List(
+      new SortClause("desynpuf_id", ORDER.asc),
+      new SortClause("id", ORDER.asc)))
     query.add("cursorMark", "*")
     val resp = qserver.query(query)
     val nextCursorMark = resp.getNextCursorMark()
