@@ -52,6 +52,9 @@
   <field name="icd9_dgns_cds" type="string" indexed="true" stored="true" required="false" multiValued="true"/>
   <field name="icd9_prcdr_cds" type="string" indexed="true" stored="true" required="false" multiValued="true"/>
   <field name="hcpcs_cds" type="string" indexed="true" stored="true" required="false" multiValued="true"/>
+  <!-- added to member record via computation -->
+  <field name="age_at_death" type="int" indexed="true" stored="true" required="false" multiValued="false"/>
+  <field name="num_io" type="int" indexed="true" stored="true" required="false" multiValued="false"/>
 
    <!-- required by solr -->
   <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
