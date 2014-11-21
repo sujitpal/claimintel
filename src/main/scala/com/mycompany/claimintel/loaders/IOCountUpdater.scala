@@ -1,16 +1,16 @@
 package com.mycompany.claimintel.loaders
 
-import org.apache.solr.client.solrj.impl.HttpSolrServer
+import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.JavaConversions._
+import org.apache.commons.codec.digest.DigestUtils
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.SolrQuery.ORDER
-import scala.collection.JavaConversions._
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer
+import org.apache.solr.client.solrj.impl.HttpSolrServer
+import org.apache.solr.common.SolrInputDocument
 import java.io.PrintWriter
 import java.io.FileWriter
 import java.io.File
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer
-import java.util.concurrent.atomic.AtomicInteger
-import org.apache.solr.common.SolrInputDocument
-import org.apache.commons.codec.digest.DigestUtils
 
 object IOCountUpdater extends App {
 
@@ -26,6 +26,7 @@ class IOCountUpdater(val solrUrl: String) {
   val qserver = new HttpSolrServer(solrUrl)
   val userver = new ConcurrentUpdateSolrServer(solrUrl, 1000, 4)
   val updateCount = new AtomicInteger(0)
+  val logger = new PrintWriter(new FileWriter(new File("/tmp/log.txt")))
   
   def update(): Unit = {
     val numrecs = numIORecs()
@@ -51,6 +52,8 @@ class IOCountUpdater(val solrUrl: String) {
     userver.commit()
     userver.shutdown()
     qserver.shutdown()
+    logger.flush()
+    logger.close()
   }
   
   def numIORecs(): Long = {
@@ -77,6 +80,8 @@ class IOCountUpdater(val solrUrl: String) {
   }
   
   def addIOCount(desynpufId: String, iocount: Int): Unit = {
+    Console.println("%s\t%d".format(desynpufId, iocount))
+    logger.println("%s\t%d".format(desynpufId, iocount))
     val partialUpdate = mapAsJavaMap(List(("set", iocount)).toMap)
     val doc = new SolrInputDocument()
     doc.addField("id", DigestUtils.md5Hex("B:" + desynpufId))

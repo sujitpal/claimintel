@@ -1,16 +1,15 @@
 package com.mycompany.claimintel.loaders
 
-import java.io.File
-import java.io.FileWriter
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
 import scala.collection.JavaConversions._
+
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.apache.solr.common.SolrInputDocument
-import org.apache.commons.codec.digest.DigestUtils
 
 object MortalityUpdater extends App {
 
