@@ -74,7 +74,7 @@ class IOCountUpdater(val solrUrl: String) {
     query.setFields("desynpuf_id")
     query.setStart(0)
     query.setRows(rows)
-    query.setSort("desynpuf_id", ORDER.asc)
+    query.setSort("id", ORDER.asc)
     query.add("cursorMark", "*")
     val resp = qserver.query(query)
     val nextCursorMark = resp.getNextCursorMark()
