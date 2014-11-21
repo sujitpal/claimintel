@@ -48,9 +48,12 @@ class DataLoader(datadir: String, solrUrl: String) {
 //    solr.deleteByQuery("rec_type:O")
     solr.commit()
     subdirs.foreach(subdir => {
-      new File(datadir, subdir).listFiles().foreach(file => {
-        Console.println("Loading file: " + 
-          StringUtils.join(List(subdir, file.getName()), File.separator))
+      new File(datadir, subdir)
+        .listFiles()
+        .sortWith((f1, f2) => f1.getName() < f2.getName())
+        .foreach(file => {
+          Console.println("Loading file: " + 
+            StringUtils.join(List(subdir, file.getName()), File.separator))
         Source.fromFile(file).getLines().foreach(line => {
           if (!line.startsWith("\"")) {
             val cols = StringUtils.splitPreserveAllTokens(line, ",")

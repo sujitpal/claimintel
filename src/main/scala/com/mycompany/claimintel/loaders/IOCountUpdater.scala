@@ -34,9 +34,11 @@ class IOCountUpdater(val solrUrl: String) {
     val numpages = (numrecs / rowsPerPage).toInt + 1
     var count = 0
     var prevId: String = null
+    var cursorMark = "*"
     (0 until numpages).foreach(page => {
       val start = (page) * rowsPerPage
-      val ids = results(start, rowsPerPage)
+      val (nextCursorMark, ids) = results(cursorMark, rowsPerPage)
+      cursorMark = nextCursorMark
       ids.foreach(id => {
         if (id.equals(prevId)) count = count + 1
         else {
@@ -65,18 +67,21 @@ class IOCountUpdater(val solrUrl: String) {
     resp.getResults().getNumFound()
   }
   
-  def results(start: Int, rows: Int): List[String] = {
+  def results(cursorMark: String, rows: Int): (String,List[String]) = {
     val query = new SolrQuery()
     query.setQuery("*:*")
     query.setFilterQueries("rec_type:(I OR O)")
     query.setFields("desynpuf_id")
-    query.setStart(start)
+    query.setStart(0)
     query.setRows(rows)
     query.setSort("desynpuf_id", ORDER.asc)
+    query.add("cursorMark", "*")
     val resp = qserver.query(query)
-    resp.getResults().map(doc => 
+    val nextCursorMark = resp.getNextCursorMark()
+    val results = resp.getResults().map(doc => 
       doc.getFieldValue("desynpuf_id").asInstanceOf[String])
       .toList
+    (nextCursorMark, results)
   }
   
   def addIOCount(desynpufId: String, iocount: Int): Unit = {
