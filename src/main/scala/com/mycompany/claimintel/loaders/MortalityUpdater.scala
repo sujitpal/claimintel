@@ -7,7 +7,6 @@ import java.util.Locale
 import scala.collection.JavaConversions._
 
 import org.apache.solr.client.solrj.SolrQuery
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.apache.solr.common.SolrInputDocument
 
@@ -22,8 +21,7 @@ object MortalityUpdater extends App {
 
 class MortalityUpdater(solrUrl: String) {
 
-  val qserver = new HttpSolrServer(solrUrl)
-  val userver = new ConcurrentUpdateSolrServer(solrUrl, 1000, 4)
+  val server = new HttpSolrServer(solrUrl)
   
   def update(): Unit = {
     // find how many records to update
@@ -32,14 +30,14 @@ class MortalityUpdater(solrUrl: String) {
     nquery.setFilterQueries("rec_type:B", 
       "bene_death_date:[* TO *]")
     nquery.setRows(0)
-    val nresp = qserver.query(nquery)
+    val nresp = server.query(nquery)
     val numfound = nresp.getResults().getNumFound()
     // rebuild the query, paging through the resultset
     // 1000 records at a time
     val rowsPerPage = 1000
     val numpages = (numfound / rowsPerPage) + 1
     (0L until numpages).foreach(pagenum => {
-      if (pagenum > 0 && pagenum % 10 == 0) userver.commit()
+      if (pagenum > 0 && pagenum % 10 == 0) server.commit()
       else {}
       val query = new SolrQuery()
       query.setQuery("*:*")
@@ -48,7 +46,7 @@ class MortalityUpdater(solrUrl: String) {
       query.setStart(pagenum.toInt * rowsPerPage)
       query.setRows(rowsPerPage)
       query.setFields("id", "bene_birth_date", "bene_death_date")
-      val resp = qserver.query(query)
+      val resp = server.query(query)
       resp.getResults().map(result => {
         val id = result.getFieldValue("id").asInstanceOf[String]
         val beneBirthDate = result.getFieldValue("bene_birth_date").asInstanceOf[Date]
@@ -63,9 +61,8 @@ class MortalityUpdater(solrUrl: String) {
       })
       query.clear()
     })
-    userver.commit()
-    userver.shutdown()
-    qserver.shutdown()
+    server.commit()
+    server.shutdown()
   }
   
   def updateRecord(id: String, ageAtDeath: Integer): Unit = {
@@ -73,6 +70,6 @@ class MortalityUpdater(solrUrl: String) {
     val doc = new SolrInputDocument()
     doc.addField("id", id)
     doc.addField("age_at_death", partialUpdate)
-    userver.add(doc)
+    server.add(doc)
   }
 }

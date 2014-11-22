@@ -156,7 +156,12 @@ class ClaimController @Autowired() (
     model.addAttribute("filterStr", buildFilterString(popFilters))
     val ttype = ServletRequestUtils.getStringParameter(req, "ttype", "B")
     model.addAttribute("ttype", ttype)
-    val costdata = solrService.costFacets(popFilters, ttype)
+    val lb = ServletRequestUtils.getFloatParameter(req, "costlb", -1.0F)
+    val ub = ServletRequestUtils.getFloatParameter(req, "costub", -1.0F)
+    val costfacets = solrService.costFacets(popFilters, ttype, lb, ub)
+    model.addAttribute("costlb", costfacets._1)
+    model.addAttribute("costub", costfacets._2)
+    val costdata = costfacets._3
     val costDistrib = new PopDistrib()
     costDistrib.setEncodedData(URLEncoder.encode(
       JSONObject(costdata).toString(), "UTF-8"))
@@ -216,6 +221,51 @@ class ClaimController @Autowired() (
       new ContinuousStats(mortStats))
 
     "mortality"
+  }
+  
+  @RequestMapping(value = Array("/patients.html"),
+      method = Array(RequestMethod.GET))
+  def patients(req: HttpServletRequest, res: HttpServletResponse, 
+      model: Model): String = {
+    
+    val popFilters = buildPopulationFilter(req)
+    model.addAttribute("filters", 
+      seqAsJavaList(popFilters.map(pf => new PopFilter(pf._1, pf._2))))
+    model.addAttribute("filterStr", buildFilterString(popFilters))
+    
+    val start = ServletRequestUtils.getIntParameter(req, "start", 0)
+    model.addAttribute("start", start)
+    
+    val presults = solrService.patients(popFilters, start)
+    val numPatients = presults._1
+    val patients = presults._2
+    model.addAttribute("numPatients", numPatients)
+    model.addAttribute("patients", seqAsJavaList(patients))
+    
+    if (start + 25 < numPatients) model.addAttribute("next", start + 25)
+    if (start - 25 > 0) model.addAttribute("prev", start - 25)
+    
+    "patients"
+  }
+
+  @RequestMapping(value = Array("/timeline.html"),
+      method = Array(RequestMethod.GET))
+  def timeline(req: HttpServletRequest, res: HttpServletResponse, 
+      model: Model): String = {
+    
+    val popFilters = buildPopulationFilter(req)
+    model.addAttribute("filters", 
+      seqAsJavaList(popFilters.map(pf => new PopFilter(pf._1, pf._2))))
+    model.addAttribute("filterStr", buildFilterString(popFilters))
+    
+    val patientId = ServletRequestUtils.getRequiredStringParameter(req, "pid")
+    val tresults = solrService.timeline(patientId)
+    val patient = tresults._1
+    val transactions = tresults._2
+    model.addAttribute("patient", patient)
+    model.addAttribute("transactions", seqAsJavaList(transactions))
+  
+    "timeline"
   }
   
   def buildPopulationFilter(req: HttpServletRequest): 

@@ -16,9 +16,19 @@
         <input type="hidden" name="${pf.name}" value="${pf.value}"/>
       </c:forEach>
 
-      <input type="radio" name="ttype" value="I" <c:if test="${ttype eq 'I'}">checked</c:if>/>Inpatient Only</br/>
-      <input type="radio" name="ttype" value="O" <c:if test="${ttype eq 'O'}">checked</c:if>/>Outpatient Only</br/>
-      <input type="radio" name="ttype" value="B" <c:if test="${ttype eq 'B'}">checked</c:if>/>Both</br/>
+      <table cellspacing="3" cellpadding="3" border="0" width="100%">
+        <tr>
+          <td valign="top" width="50%">
+            <input type="radio" name="ttype" value="I" <c:if test="${ttype eq 'I'}">checked</c:if>/>Inpatient Only</br/>
+            <input type="radio" name="ttype" value="O" <c:if test="${ttype eq 'O'}">checked</c:if>/>Outpatient Only</br/>
+            <input type="radio" name="ttype" value="B" <c:if test="${ttype eq 'B'}">checked</c:if>/>Both</br/>
+          </td>
+          <td valign="top" width="50%">
+            Lower Bound: $<input type="text" name="costlb" value="${costlb}"/><br/>
+            Upper Bound: $<input type="text" name="costub" value="${costub}"/><br/>
+          </td>
+        </tr>
+      </table>
 
       <table cellspacing="3" cellpadding="3" border="0" width="100%">
         <tr>
@@ -65,8 +75,8 @@
         </tr>
       </table>
 
-       <input type="submit" name="submit" value="Filter by Patient Type"/>&nbsp;||&nbsp;
-       <a href="/population.html?${filterStr}">Clear Patient Type Filter</a>
+       <input type="submit" name="submit" value="Filter"/>&nbsp;||&nbsp;
+       <a href="/population.html?${filterStr}">Clear Filter</a>
      </form> 
   </body>
 </html>

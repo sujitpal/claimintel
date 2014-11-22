@@ -1,17 +1,20 @@
 package com.mycompany.claimintel.loaders
 
+import java.io.File
+import java.io.FileWriter
+import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.JavaConversions._
+
+import scala.collection.JavaConversions.asScalaBuffer
+import scala.collection.JavaConversions.mapAsJavaMap
+import scala.collection.JavaConversions.seqAsJavaList
+
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.SolrQuery.ORDER
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer
+import org.apache.solr.client.solrj.SolrQuery.SortClause
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.apache.solr.common.SolrInputDocument
-import java.io.PrintWriter
-import java.io.FileWriter
-import java.io.File
-import org.apache.solr.client.solrj.SolrQuery.SortClause
 
 object IOCountUpdater extends App {
 
@@ -24,8 +27,7 @@ object IOCountUpdater extends App {
 
 class IOCountUpdater(val solrUrl: String) {
 
-  val qserver = new HttpSolrServer(solrUrl)
-  val userver = new ConcurrentUpdateSolrServer(solrUrl, 1000, 4)
+  val server = new HttpSolrServer(solrUrl)
   val updateCount = new AtomicInteger(0)
   val logger = new PrintWriter(new FileWriter(new File("/tmp/log.txt")))
   
@@ -52,9 +54,8 @@ class IOCountUpdater(val solrUrl: String) {
       })
       if (count > 0) addIOCount(prevId, count)
     })
-    userver.commit()
-    userver.shutdown()
-    qserver.shutdown()
+    server.commit()
+    server.shutdown()
     logger.flush()
     logger.close()
   }
@@ -64,22 +65,23 @@ class IOCountUpdater(val solrUrl: String) {
     query.setQuery("*:*")
     query.setFilterQueries("rec_type:(I OR O)")
     query.setRows(0)
-    val resp = qserver.query(query)
+    val resp = server.query(query)
     resp.getResults().getNumFound()
   }
   
   def results(cursorMark: String, rows: Int): (String,List[String]) = {
     val query = new SolrQuery()
     query.setQuery("*:*")
-    query.setFilterQueries("rec_type:(I OR O)")
+    query.setFilterQueries("rec_type:(I OR O)",
+      "clm_from_dt:[* TO *]")
     query.setFields("desynpuf_id")
     query.setStart(0)
     query.setRows(rows)
     query.setSorts(List(
       new SortClause("desynpuf_id", ORDER.asc),
       new SortClause("id", ORDER.asc)))
-    query.add("cursorMark", "*")
-    val resp = qserver.query(query)
+    query.add("cursorMark", cursorMark)
+    val resp = server.query(query)
     val nextCursorMark = resp.getNextCursorMark()
     val results = resp.getResults().map(doc => 
       doc.getFieldValue("desynpuf_id").asInstanceOf[String])
@@ -88,14 +90,14 @@ class IOCountUpdater(val solrUrl: String) {
   }
   
   def addIOCount(desynpufId: String, iocount: Int): Unit = {
-    Console.println("%s\t%d".format(desynpufId, iocount))
+    val ucount = updateCount.addAndGet(1)
+    Console.println("%s\t%d\t(%d)".format(desynpufId, iocount, ucount))
     logger.println("%s\t%d".format(desynpufId, iocount))
     val partialUpdate = mapAsJavaMap(List(("set", iocount)).toMap)
     val doc = new SolrInputDocument()
     doc.addField("id", DigestUtils.md5Hex("B:" + desynpufId))
     doc.addField("num_io", partialUpdate)
-    userver.add(doc)
-    val ucount = updateCount.addAndGet(1)
-    if (ucount % 1000 == 0) userver.commit() else {}
+    server.add(doc)
+    if (ucount % 1000 == 0) server.commit() else {}
   }
 }
