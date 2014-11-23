@@ -12,6 +12,13 @@ import org.jfree.chart.plot.CategoryPlot
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.data.category.DefaultCategoryDataset
 import org.springframework.stereotype.Service
+import java.util.Date
+import java.util.Calendar
+import java.util.Locale
+import org.jfree.data.xy.XYSeries
+import org.jfree.data.xy.XYSeriesCollection
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
+import java.text.SimpleDateFormat
 
 @Service
 class ChartService {
@@ -49,6 +56,38 @@ class ChartService {
     ostream.flush()
   }
   
+  val dateFormatter = new SimpleDateFormat("yyyyMMdd")
+  
+  def line(data: Map[String,Double], title: String, 
+      xtitle: String, ytitle: String, 
+      horizontal: Boolean, width: Int, 
+      height: Int, ostream: OutputStream): Unit = {
+    val cdata = data.map(kv => 
+      (dateFormatter.parse(kv._1), kv._2))
+    val ckeys = cdata.keys.toList.sorted
+    val startDate = ckeys.head
+    val series = new XYSeries(title)
+    ckeys.map(k => (daysBetween(startDate, k), cdata(k)))
+      .foreach(xy => series.add(xy._1, xy._2))
+    val dataset = new XYSeriesCollection()
+    dataset.addSeries(series)
+    val chart = ChartFactory.createXYLineChart(
+      title, xtitle, ytitle, dataset, 
+      if (horizontal) PlotOrientation.HORIZONTAL 
+      else PlotOrientation.VERTICAL, 
+      false, false, false)
+    chart.setBackgroundPaint(Color.WHITE)
+    val plot = chart.getXYPlot()
+    plot.setBackgroundPaint(Color.WHITE)
+    plot.setDomainGridlinePaint(Color.LIGHT_GRAY)
+    plot.setRangeGridlinePaint(Color.LIGHT_GRAY)
+    val image = chart.createBufferedImage(width, height)
+    ChartUtilities.writeBufferedImageAsPNG(ostream, image)
+    ostream.flush()
+  }
+  
+  def daysBetween(refDt: Date, dt: Date): Int =
+    return ((dt.getTime() - refDt.getTime()) / 86400000).toInt
 }
 
 object ChartSorting extends Enumeration {

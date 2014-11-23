@@ -10,20 +10,24 @@
     <h2>Patient Timeline</h2>
     <p>Timeline for <b>[${patient.desynpufId}]</b>, a ${patient.age} year old ${patient.race} ${patient.sex} from ${patient.state}.<br/><b>Coverages:</b> Part A: ${patient.partACoverageMos}mo., Part B: ${patient.partBCoverageMos}mo., HMO: ${patient.hmoCoverageMos}mo., Part D: ${patient.partDCoverageMos}mo.<br/><b>Comorbidities:</b> <c:out value="${fn:join(patient.comorbs, ', ')}"/></p><hr/> 
 
+    <p><img src="/chart.html?type=line&data=${costOverTimeEncoded}&width=1500"/></p><hr/>
+
     <table cellspacing="2" cellpadding="2" border="1" width="100%">
       <tr>
-        <td width="8%"><b>Type</b></td>
+        <td width="6%"><b>Type</b></td>
+        <td width="6%"><b>Claim ID</b></td>
         <td width="8%"><b>Claim From</b></td>
         <td width="8%"><b>Claim Thru</b></td>
-        <td width="8%"><b>Provider</b></td>
-        <td width="8%"><b>Amount Paid</b></td>
+        <td width="6%"><b>Provider</b></td>
+        <td width="6%"><b>Amount Paid</b></td>
         <td width="20%"><b>ICD-9 Diag Codes</b></td>
         <td width="20%"><b>ICD-9 Proc Codes</b></td>
         <td width="20%"><b>HCPCS Codes</b></td>
       </tr>
       <c:forEach items="${transactions}" var="t">
-      <tr>
+      <tr <c:if test="${t.ioro eq 'Inpatient'}">bgcolor="yellow"</c:if>>
         <td>${t.ioro}</td>
+        <td>${t.claimId}</td>
         <td><fmt:formatDate type="date" value="${t.claimFrom}"/></td>
         <td><fmt:formatDate type="date" value="${t.claimThru}"/></td>
         <td>${t.provider}</td>

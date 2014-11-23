@@ -18,8 +18,8 @@
     </c:forEach>
     </ol>
 
-    <c:if test="${not empty prev}"><a href="/patients.html?start=${prev}&${filters}">Prev</a>&nbsp;||&nbsp;</c:if>
-    <c:if test="${not empty next}"><a href="/patients.html?start=${next}&${filters}">Next</a>&nbsp;||&nbsp;</c:if>
+    <c:if test="${not empty prev}"><a href="/patients.html?start=${prev}&${filterStr}">Prev</a>&nbsp;||&nbsp;</c:if>
+    <c:if test="${not empty next}"><a href="/patients.html?start=${next}&${filterStr}">Next</a>&nbsp;||&nbsp;</c:if>
     <a href="/population.html?${filterStr}">Back to Demographics</a>
 
   </body>

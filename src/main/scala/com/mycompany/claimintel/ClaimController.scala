@@ -108,6 +108,9 @@ class ClaimController @Autowired() (
       case "bar" => chartService.bar(
         data, title, xtitle, ytitle, true, width, height, 
         sortByCount, res.getOutputStream())
+      case "line" => chartService.line(
+        data, title, xtitle, ytitle, false, width, height, 
+        res.getOutputStream())
     }
     null
   }
@@ -243,7 +246,7 @@ class ClaimController @Autowired() (
     model.addAttribute("patients", seqAsJavaList(patients))
     
     if (start + 25 < numPatients) model.addAttribute("next", start + 25)
-    if (start - 25 > 0) model.addAttribute("prev", start - 25)
+    if (start - 25 >= 0) model.addAttribute("prev", start - 25)
     
     "patients"
   }
@@ -264,7 +267,15 @@ class ClaimController @Autowired() (
     val transactions = tresults._2
     model.addAttribute("patient", patient)
     model.addAttribute("transactions", seqAsJavaList(transactions))
-  
+
+    val costOverTime = transactions.map(t => 
+      (chartService.dateFormatter.format(t.getClaimFrom()), 
+        t.getClmPmtAmt().toDouble))
+      .toMap
+    model.addAttribute("costOverTimeEncoded",
+      URLEncoder.encode(JSONObject(costOverTime).toString(), 
+      "UTF-8"))
+    
     "timeline"
   }
   
