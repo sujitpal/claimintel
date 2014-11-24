@@ -1,22 +1,27 @@
 package com.mycompany.claimintel
 
 import java.net.URLEncoder
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+
 import scala.collection.JavaConversions._
 import scala.util.parsing.json.JSON
 import scala.util.parsing.json.JSONObject
+
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.stereotype.Service
 import org.springframework.ui.Model
 import org.springframework.web.bind.ServletRequestUtils
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
+
 import com.mycompany.claimintel.dtos.CategoryStats
+import com.mycompany.claimintel.dtos.ContinuousStats
 import com.mycompany.claimintel.dtos.PopDistrib
 import com.mycompany.claimintel.dtos.PopFilter
-import com.mycompany.claimintel.dtos.ContinuousStats
+
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+
+import org.springframework.web.bind.annotation.RequestMethod
 
 @Controller
 class ClaimController @Autowired() (
@@ -109,6 +114,9 @@ class ClaimController @Autowired() (
         data, title, xtitle, ytitle, true, width, height, 
         sortByCount, res.getOutputStream())
       case "line" => chartService.line(
+        data, title, xtitle, ytitle, false, width, height, 
+        res.getOutputStream())
+      case "bubble" => chartService.bubble(
         data, title, xtitle, ytitle, false, width, height, 
         res.getOutputStream())
     }
@@ -277,6 +285,28 @@ class ClaimController @Autowired() (
       "UTF-8"))
     
     "timeline"
+  }
+  
+  @RequestMapping(value = Array("/corrs.html"),
+      method = Array(RequestMethod.GET))
+  def corrs(req: HttpServletRequest, res: HttpServletResponse, 
+      model: Model): String = {
+    
+    val popFilters = buildPopulationFilter(req)
+    model.addAttribute("filters", 
+      seqAsJavaList(popFilters.map(pf => new PopFilter(pf._1, pf._2))))
+    model.addAttribute("filterStr", buildFilterString(popFilters))
+  
+    val xcorr = ServletRequestUtils.getStringParameter(req, "xcorr")
+    val ycorr = ServletRequestUtils.getStringParameter(req, "ycorr")
+    
+    if (xcorr != null && ycorr != null) { 
+      val corrdata = solrService.correlation(popFilters, xcorr, ycorr)
+      model.addAttribute("corrdataEncoded", 
+        URLEncoder.encode(JSONObject(corrdata).toString(), "UTF-8"))
+    }
+    
+    "corrs"
   }
   
   def buildPopulationFilter(req: HttpServletRequest): 

@@ -4,14 +4,17 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
+
 import scala.collection.JavaConversions._
+
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.SolrQuery.ORDER
 import org.apache.solr.client.solrj.impl.HttpSolrServer
-import org.springframework.stereotype.Service
-import org.apache.solr.common.util.NamedList
-import com.mycompany.claimintel.dtos.Patient
 import org.apache.solr.common.SolrDocument
+import org.apache.solr.common.util.NamedList
+import org.springframework.stereotype.Service
+
+import com.mycompany.claimintel.dtos.Patient
 import com.mycompany.claimintel.dtos.PatientTransaction
 
 @Service
@@ -355,6 +358,57 @@ class SolrService {
       tx
     }).toList
     (patient, transactions)
+  }
+  
+  def correlation(filters: List[(String,String)], 
+      xfield: String, yfield: String): Map[String,Double] = {
+    val xyfields = List(xfield, yfield).sorted
+    if ("bene_age".equals(xyfields.head)) {
+      // age is not a true facet, so we have to compute
+      // counts for each age range and join them up
+      populationAgeFacet(filters)
+        .flatMap(kv => {
+          val query = new SolrQuery()
+          query.setQuery("*:*")
+          query.setFilterQueries("rec_type:B")
+          groupFilters(filters).foreach(fq => 
+            query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+          // add the age range as an additional filter
+          query.addFilterQuery(intervalToQuery(kv._1))
+          query.setRows(0)
+          query.setFacet(true)
+          query.addFacetField(xyfields(1))
+          val resp = server.query(query)
+          resp.getFacetFields()
+            .flatMap(ff => ff.getValues()
+              .map(fv =>
+                (List(kv._1, fv.getName()).mkString("::"), 
+                  fv.getCount().toDouble)
+            )).toList
+        })
+    } else {
+      val query = new SolrQuery()
+      query.setQuery("*:*")
+      query.setFilterQueries("rec_type:B")
+      groupFilters(filters).foreach(fq => 
+        query.addFilterQuery(List(fq._1, fq._2).mkString(":")))
+      query.setRows(0)
+      // just use Solr's facet pivot query
+      query.setFacet(true)
+      val pkey = xyfields.mkString(",")
+      query.add("facet.pivot", pkey)
+      val resp = server.query(query)
+      resp.getFacetPivot().get(pkey)
+        .flatMap(pf => {
+          val xkey = pf.getValue().asInstanceOf[String]
+          pf.getPivot().map(pv =>  
+            (xkey, pv.getValue().asInstanceOf[String], 
+              pv.getCount()))   
+        })
+        .map(t => (List(t._1, t._2).mkString("::"), 
+          t._3.toDouble))
+        .toMap
+    }
   }
   
   def populatePatient(doc: SolrDocument, now: Date): Patient = {

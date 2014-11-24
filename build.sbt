@@ -8,7 +8,7 @@ scalaVersion := "2.10.2"
 
 sbtVersion := "0.13.1"
 
-jetty()
+jetty(config = "src/main/resources/jetty.xml")
 
 resolvers += Resolver.mavenLocal
 

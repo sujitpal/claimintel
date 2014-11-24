@@ -193,6 +193,7 @@
       <a href="/mortality.html?${filters}">Mortality</a>&nbsp;||&nbsp;
       <a href="/codes.html?${filters}">Codes</a>&nbsp;||&nbsp;
       <a href="/costs.html?${filters}">Costs</a>&nbsp;||&nbsp;
+      <a href="/corrs.html?${filters}">Correlations</a>&nbsp;||&nbsp;
       <a href="/patients.html?${filters}">Patients</a>
 
     </form>
