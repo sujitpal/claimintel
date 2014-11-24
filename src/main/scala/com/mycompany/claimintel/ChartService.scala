@@ -83,7 +83,9 @@ class ChartService {
     plot.setBackgroundPaint(Color.WHITE)
     plot.setDomainGridlinePaint(Color.LIGHT_GRAY)
     plot.setRangeGridlinePaint(Color.LIGHT_GRAY)
-    val image = chart.createBufferedImage(width, height)
+    plot.setNoDataMessage(if (title.isEmpty) "Please Wait" else title) 
+    val info = new ChartRenderingInfo(new StandardEntityCollection())
+    val image = chart.createBufferedImage(width, height, info)
     ChartUtilities.writeBufferedImageAsPNG(ostream, image)
     ostream.flush()
   }
@@ -141,7 +143,9 @@ class ChartService {
     plot.setBackgroundPaint(Color.WHITE)
     plot.setDomainGridlinePaint(Color.LIGHT_GRAY)
     plot.setRangeGridlinePaint(Color.LIGHT_GRAY)
-    val image = chart.createBufferedImage(width, height)
+    plot.setNoDataMessage(if (title.isEmpty) "Please Wait" else title) 
+    val info = new ChartRenderingInfo(new StandardEntityCollection())
+    val image = chart.createBufferedImage(width, height, info)
     ChartUtilities.writeBufferedImageAsPNG(ostream, image)
     ostream.flush()
   }

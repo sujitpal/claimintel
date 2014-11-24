@@ -30,7 +30,7 @@
       </tr>
       <tr>
         <td width="20%" align="right"><b>Age</b></td>
-        <td width="16%" align="center"><a href="/corrs.html?xcorr=bene_age&ycorr=bene_sex&title=Age+vs+Gender&width=1000${filterStr}">Correlate</a></td>
+        <td width="16%" align="center"><a href="/corrs.html?xcorr=bene_age&ycorr=bene_sex&title=Age+vs+Gender&width=1000&${filterStr}">Correlate</a></td>
         <td width="16%" align="center">&nbsp;</td>
         <td width="16%" align="center">&nbsp;</td>
         <td width="16%" align="center">&nbsp;</td>
@@ -63,9 +63,11 @@
     </table>
     <hr/>
 
-    <img src="/chart.html?type=bubble&data=${corrdataEncoded}"/>
+    <c:if test="${not empty corrdataEncoded}">
+      <center><img src="/chart.html?type=bubble&data=${corrdataEncoded}&title=${title}&height=${height}&width=${width}"/></center>
+      <hr/>
+    </c:if>
 
-    <hr/>
     <a href="/population.html?${filterStr}">Back to Demographic Page</a>
   </body>
 </html>

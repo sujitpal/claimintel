@@ -300,6 +300,14 @@ class ClaimController @Autowired() (
     val xcorr = ServletRequestUtils.getStringParameter(req, "xcorr")
     val ycorr = ServletRequestUtils.getStringParameter(req, "ycorr")
     
+    // pass these through to the chart
+    val title = ServletRequestUtils.getStringParameter(req, "title")
+    if (title != null) model.addAttribute("title", title) else {}
+    val width = ServletRequestUtils.getIntParameter(req, "width", -1)
+    if (width > 0) model.addAttribute("width", width) else {}
+    val height = ServletRequestUtils.getIntParameter(req, "height", -1)
+    if (height > 0) model.addAttribute("height", height) else {}
+    
     if (xcorr != null && ycorr != null) { 
       val corrdata = solrService.correlation(popFilters, xcorr, ycorr)
       model.addAttribute("corrdataEncoded", 
