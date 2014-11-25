@@ -36,7 +36,7 @@
             <b>Distribution</b><br/>
             <table cellspacing="1" cellpadding="0" border="1">
               <tr>
-                <td><b>Gender</b></td>
+                <td><b>Age at Death</b></td>
                 <td><b>Frequency</b></td>
                 <td><b>Relative Frequency (%)</b></td>
               </tr>
