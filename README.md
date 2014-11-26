@@ -2,7 +2,7 @@
 
 This project is an attempt to build a custom Business Intelligence (BI) tool around Medicare Claims Data for the years 2008-2010, made available by the [Centers for Medicare and Medicaid Services (CMS)](http://www.cms.gov/) in anonymized form. The data is for 2,326,856 unique members, consisting of 1,332,822 inpatient and 15,826,987 outpatient records. The tool is meant to help human analysts find interesting subgroups (cohorts) from this population for further analysis.
 
-See my [blog post](TODO) for some interesting screenshots, it may spark some ideas about what you can do with this tool.
+See my [blog post](http://sujitpal.blogspot.com/2014/11/more-scala-web-development-with-spring.html) for some interesting screenshots, it may spark some ideas about what you can do with this tool.
 
 
 ##Architecture
